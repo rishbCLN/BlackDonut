@@ -195,8 +195,6 @@ export default function HeroSection({ initialProgress = 0, onComplete, onReverse
     };
   }, [inputEnabled, onComplete, onReverseComplete, progress]);
 
-  const backdropScale = useTransform(smoothProgress, [0, 1], [1, 1.2]);
-  const backdropRotate = useTransform(smoothProgress, [0, 1], ["0deg", "-7deg"]);
   const beamLeftX = useTransform(smoothProgress, [0, 1], ["0%", "18%"]);
   const beamRightX = useTransform(smoothProgress, [0, 1], ["0%", "-22%"]);
   const beamOpacity = useTransform(smoothProgress, [0, 0.82, 1], [0.38, 0.68, 0]);
@@ -218,18 +216,11 @@ export default function HeroSection({ initialProgress = 0, onComplete, onReverse
   const cinematicFlash = useTransform(cinematicZoom, [0, 0.72, 0.94, 1], [0, 0, 0.95, 1]);
 
   return (
-    <section ref={sectionRef} className="relative h-screen w-full overflow-hidden bg-[#05030b] text-white">
-      <motion.div className="hero-spectrum-backdrop pointer-events-none absolute inset-[-14%] z-0" style={{ scale: backdropScale, rotate: backdropRotate }} />
-
-      <div className="violet-speckles pointer-events-none absolute inset-0 z-0 opacity-50" />
-
-      <div
-        className="pointer-events-none absolute inset-0 z-0"
-        style={{
-          background:
-            "radial-gradient(circle at 16% 24%, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 22%), radial-gradient(circle at 76% 18%, rgba(103,237,255,0.12) 0%, rgba(103,237,255,0) 24%), linear-gradient(180deg, rgba(7,4,14,0.08) 0%, rgba(4,3,10,0.88) 100%)",
-        }}
-      />
+    <section 
+      ref={sectionRef} 
+      className="relative h-screen w-full overflow-hidden text-white bg-cover bg-center bg-no-repeat"
+      style={{ backgroundImage: "url('/back1.png')" }}
+    >
 
       <motion.div className="hero-grid-plane pointer-events-none absolute inset-x-[-6%] bottom-[-20%] top-[42%] z-[1]" style={{ opacity: gridOpacity, y: gridY }} />
 
