@@ -121,12 +121,12 @@ export default function HeroText() {
               <div key={`${row.prefix}-${row.accent ?? "none"}-${row.suffix}`} className="overflow-hidden">
                 <motion.h1
                   variants={lineVariants}
-                  className="font-speed text-[clamp(2.9rem,7.4vw,6.9rem)] font-black italic uppercase leading-[0.88] tracking-[-0.055em] text-white"
+                  className="font-speed text-[clamp(2.9rem,7.4vw,6.9rem)] font-black italic uppercase leading-[1.05] tracking-[-0.02em] text-white"
                   style={{ textShadow: "0 0 44px rgba(255,255,255,0.06), 0 0 90px rgba(67,210,255,0.08)" }}
                 >
                   {row.prefix}
-                  {row.accent ? <span className="hero-gradient-word ml-[0.18em] inline-block">{row.accent}</span> : null}
-                  {row.suffix ? <span className="ml-[0.18em] inline-block">{row.suffix}</span> : null}
+                  {row.accent ? <span className="hero-gradient-word ml-[0.24em] inline-block">{row.accent}</span> : null}
+                  {row.suffix ? <span className="ml-[0.24em] inline-block">{row.suffix}</span> : null}
                 </motion.h1>
               </div>
             ))}

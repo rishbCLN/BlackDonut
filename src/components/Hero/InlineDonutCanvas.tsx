@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Group, MathUtils } from "three";
 import CrystalCore from "./CrystalCore";
@@ -21,12 +21,12 @@ function TransparentClearColor() {
 }
 
 const SITE_CAMERA_Z = 5.34;
-const SITE_SCALE_START = 0.9;
-const SITE_SCALE_END = 1.06;
-const SITE_Y_START = 0.14;
-const SITE_Y_END = -1.72;
-const SITE_X_END = 0.22;
-const SITE_Z_END = -0.28;
+const SITE_SCALE_START = 1.35;
+const SITE_SCALE_END = 1.6;
+const SITE_Y_START = 0.4;
+const SITE_Y_END = -2.6;
+const SITE_X_END = 0.15;
+const SITE_Z_END = -0.25;
 const IMPACT_END = 0.28;
 const BOUNCE_END = 0.66;
 const ZOOM_START = 0.78;
@@ -45,12 +45,17 @@ function easeInOutSmoothstep(value: number) {
   return t * t * (3 - 2 * t);
 }
 
-function DonutRig({ spinProgressRef, cinematicProgressRef, isCinematic = false, motionMode = "site" }: InlineDonutCanvasProps) {
+function DonutRig({ spinProgressRef, cinematicProgressRef, isCinematic = false, motionMode = "hero" }: InlineDonutCanvasProps) {
   const groupRef = useRef<Group>(null);
+  const smoothProgressRef = useRef(spinProgressRef?.current ?? 0);
   const { camera, size } = useThree();
 
   useFrame((state, delta) => {
-    const progress = clamp01(spinProgressRef?.current ?? 0);
+    const rawProgress = clamp01(spinProgressRef?.current ?? 0);
+    // Smooth the discrete scroll events to eliminate mouse-wheel stepping lag
+    smoothProgressRef.current += (rawProgress - smoothProgressRef.current) * Math.min(1, delta * 5.8);
+    
+    const progress = smoothProgressRef.current;
     const cinematicProgress = cinematicProgressRef?.current ?? 0;
     const isSiteMode = motionMode === "site";
     const isTransitionMode = motionMode === "transition";
@@ -70,31 +75,38 @@ function DonutRig({ spinProgressRef, cinematicProgressRef, isCinematic = false, 
     let targetRoll = 0;
 
     if (isSiteMode) {
+      // Leaf-like organic falling path as scroll progress changes (perfectly centered)
+      const sway = Math.sin(progress * Math.PI * 2.2) * 0.35;
+
       targetScale = MathUtils.lerp(SITE_SCALE_START, SITE_SCALE_END, sitePhase);
       targetCameraZ = SITE_CAMERA_Z;
-      targetX = MathUtils.lerp(desktopBias * 0.92, SITE_X_END, sitePhase) + Math.cos(elapsed * 0.44) * 0.035 * (1 - sitePhase * 0.35);
+      targetX = sway + Math.cos(elapsed * 0.44) * 0.035 * (1 - sitePhase * 0.35);
       targetY = MathUtils.lerp(SITE_Y_START, SITE_Y_END, sitePhase);
       targetRigZ = MathUtils.lerp(-0.04, SITE_Z_END, sitePhase);
-      targetRoll = Math.sin(elapsed * 0.68 + progress * 5.6) * 0.18 + Math.cos(elapsed * 0.31 + progress * 3.1) * 0.05;
+      targetRoll = Math.sin(elapsed * 0.68) * 0.12;
     } else if (isTransitionMode) {
-      const landY = MathUtils.lerp(SITE_Y_END, -1.96, impactPhase);
-      const bounceLiftY = MathUtils.lerp(-1.96, -0.12, bouncePhase);
+      const landY = MathUtils.lerp(SITE_Y_END, -2.6, impactPhase);
+      const bounceLiftY = MathUtils.lerp(-2.6, -0.08, bouncePhase);
       const frontZ = MathUtils.lerp(SITE_Z_END, 1.08, bouncePhase);
-      const preZoomScale = MathUtils.lerp(1.28, 1.06, zoomPhase * 0.25);
-
-      targetScale = MathUtils.lerp(preZoomScale, DONUT_SCALE_END, zoomPhase);
-      targetCameraZ = MathUtils.lerp(SITE_CAMERA_Z, CAMERA_Z_END, zoomPhase);
-      targetX = MathUtils.lerp(SITE_X_END, desktopBias * 0.04, bouncePhase) + Math.cos(elapsed * 0.46) * 0.02 * (1 - zoomPhase);
-      targetY = MathUtils.lerp(bounceLiftY, 0.02, zoomPhase);
-      targetRigZ = MathUtils.lerp(frontZ, 0.04, zoomPhase);
-      targetRoll = MathUtils.lerp(0.16, 0, Math.min(1, bouncePhase + zoomPhase));
+      
+      // Prevent visual scale snaps across phases:
+      const scalePhase1 = MathUtils.lerp(SITE_SCALE_END, 0.82, impactPhase);
+      const scalePhase2 = MathUtils.lerp(0.82, 1.15, bouncePhase);
+      const scalePhase3 = MathUtils.lerp(1.15, DONUT_SCALE_END, zoomPhase);
 
       if (progress < IMPACT_END) {
-        targetScale = MathUtils.lerp(SITE_SCALE_END, 0.88, impactPhase);
+        targetScale = scalePhase1;
         targetX = SITE_X_END;
         targetY = landY;
         targetRigZ = SITE_Z_END;
         targetRoll = 0.22;
+      } else {
+        targetScale = progress < ZOOM_START ? scalePhase2 : scalePhase3;
+        targetCameraZ = MathUtils.lerp(SITE_CAMERA_Z, CAMERA_Z_END, zoomPhase);
+        targetX = MathUtils.lerp(SITE_X_END, desktopBias * 0.04, bouncePhase) + Math.cos(elapsed * 0.46) * 0.02 * (1 - zoomPhase);
+        targetY = MathUtils.lerp(bounceLiftY, 0.02, zoomPhase);
+        targetRigZ = MathUtils.lerp(frontZ, 0.04, zoomPhase);
+        targetRoll = MathUtils.lerp(0.22, 0, Math.min(1, bouncePhase + zoomPhase));
       }
     } else if (isHeroMode) {
       if (isCinematic) {
@@ -156,12 +168,14 @@ function DonutRig({ spinProgressRef, cinematicProgressRef, isCinematic = false, 
 
   return (
     <group ref={groupRef}>
-      <CrystalCore 
-        spinProgressRef={spinProgressRef} 
-        cinematicProgressRef={cinematicProgressRef}
-        isCinematic={isCinematic}
-        motionMode={motionMode} 
-      />
+      <Suspense fallback={null}>
+        <CrystalCore 
+          spinProgressRef={spinProgressRef} 
+          cinematicProgressRef={cinematicProgressRef}
+          isCinematic={isCinematic}
+          motionMode={motionMode} 
+        />
+      </Suspense>
     </group>
   );
 }
@@ -180,19 +194,20 @@ export default function InlineDonutCanvas({ spinProgressRef, cinematicProgressRe
   return (
     <Canvas
       camera={{ position: [0, 0, 5.2], fov: 60 }}
-      gl={{ antialias: false, alpha: true, powerPreference: "high-performance", stencil: false }}
-      dpr={lowPower ? [1, 1] : [1, 1.25]}
+      gl={{ antialias: true, alpha: true, powerPreference: "high-performance", stencil: false }}
+      dpr={lowPower ? [1, 1.5] : [1, 2]}
       className="h-full w-full"
       style={{ width: "100%", height: "100%" }}
     >
       <TransparentClearColor />
 
-      <ambientLight intensity={0.28} />
-      <hemisphereLight args={["#cbf7ff", "#120817", 0.7]} />
-      <pointLight position={[4.8, 5.2, 4.2]} intensity={8.8} color="#64ecff" />
-      <pointLight position={[-4.8, -2.4, -4.4]} intensity={6.4} color="#7d7cff" />
-      <pointLight position={[1.2, -4.8, 3.8]} intensity={5.8} color="#ff7dc7" />
-      <pointLight position={[-0.8, 2.2, 5.6]} intensity={4.8} color="#ffb84d" />
+      <ambientLight intensity={1.28} />
+      <directionalLight position={[0, 4.5, 4.5]} intensity={4.8} color="#ffffff" />
+      <hemisphereLight args={["#cbf7ff", "#120817", 2.1]} />
+      <pointLight position={[4.8, 5.2, 4.2]} intensity={26.4} color="#64ecff" />
+      <pointLight position={[-4.8, -2.4, -4.4]} intensity={19.2} color="#7d7cff" />
+      <pointLight position={[1.2, -4.8, 3.8]} intensity={17.4} color="#ff7dc7" />
+      <pointLight position={[-0.8, 2.2, 5.6]} intensity={14.4} color="#ffb84d" />
 
       <DonutRig 
         spinProgressRef={spinProgressRef} 

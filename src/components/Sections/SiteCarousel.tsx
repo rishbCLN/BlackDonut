@@ -3,7 +3,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import ContactSection from "../Contact/ContactSection";
 import InlineDonutCanvas from "../Hero/InlineDonutCanvas";
 
-const LABELS = ["SERVICES", "IMPACT", "CASE STUDIES", "PROCESS", "TESTIMONIALS", "INVESTMENT"];
 const SECTION_IDS = ["services", "impact", "work", "process", "testimonials", "pricing"];
 const EXIT_THRESHOLD = 140;
 const CONTACT_ENTER_THRESHOLD = 160;
@@ -46,7 +45,6 @@ export default function SiteCarousel({ children, disabled = false, activeIndex, 
   const contactStageRef = useRef<ContactStage>("idle");
   const lastResetSignal = useRef(resetSignal);
   const transitionControlsRef = useRef<Array<{ stop: () => void }>>([]);
-  const total = children.length;
   const active = activeIndex ?? internalActive;
   const isContactVisible = contactStage !== "idle";
 
@@ -330,8 +328,6 @@ export default function SiteCarousel({ children, disabled = false, activeIndex, 
     return null;
   }
 
-  const label = LABELS[active] ?? "";
-
   return (
     <motion.div
       ref={wrapperRef}
@@ -342,10 +338,10 @@ export default function SiteCarousel({ children, disabled = false, activeIndex, 
       className="site-scroll-shell fixed inset-0 overflow-y-auto overflow-x-hidden bg-[#090612]"
     >
       <div className="pointer-events-none fixed inset-0 z-[1] overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_34%,rgba(255,255,255,0.04),transparent_16%),radial-gradient(circle_at_50%_66%,rgba(107,233,255,0.08),transparent_24%),linear-gradient(180deg,rgba(5,3,10,0.1)_0%,rgba(5,3,10,0.18)_28%,rgba(5,3,10,0.42)_100%)]" />
         <div className="absolute inset-0 opacity-[0.98]">
           <InlineDonutCanvas spinProgressRef={siteDonutProgressRef} motionMode="site" />
         </div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_34%,rgba(255,255,255,0.04),transparent_16%),radial-gradient(circle_at_50%_66%,rgba(107,233,255,0.08),transparent_24%),linear-gradient(180deg,rgba(5,3,10,0.1)_0%,rgba(5,3,10,0.18)_28%,rgba(5,3,10,0.42)_100%)]" />
       </div>
 
       <div className="relative z-[3] min-h-full pb-20">
@@ -364,42 +360,7 @@ export default function SiteCarousel({ children, disabled = false, activeIndex, 
         ))}
       </div>
 
-      {!isContactVisible && (
-        <>
-          <div className="fixed right-5 top-1/2 z-40 flex -translate-y-1/2 flex-col gap-[11px]">
-            {children.map((_, index) => (
-              <button key={LABELS[index] ?? index} title={LABELS[index]} onClick={() => scrollToIndex(index)} className="group flex h-5 w-4 items-center justify-center">
-                <span
-                  className={`rounded-full transition-all duration-500 ease-out ${
-                    index === active
-                      ? "h-[18px] w-[3px] bg-gradient-to-b from-brand-cyan via-[#b77cff] to-[#ff88cf] shadow-[0_0_14px_rgba(183,124,255,0.55)]"
-                      : "h-[5px] w-[5px] bg-white/18 group-hover:bg-white/40"
-                  }`}
-                />
-              </button>
-            ))}
-          </div>
-
-          <div className="pointer-events-none fixed bottom-0 left-0 right-0 z-40 flex items-center justify-between border-t border-white/[0.05] bg-[#0b0715]/78 px-5 py-2 backdrop-blur-md md:px-12">
-            <AnimatePresence mode="wait">
-              <motion.span
-                key={active}
-                initial={{ opacity: 0, x: -6 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 6 }}
-                transition={{ duration: 0.28 }}
-                className="font-mono text-[0.44rem] uppercase tracking-[0.46em] text-[#b8a7ff]/52"
-              >
-                ✦ &thinsp;{label}
-              </motion.span>
-            </AnimatePresence>
-
-            <span className="font-mono text-[0.44rem] uppercase tracking-[0.36em] text-white/22">
-              BD STUDIO &thinsp;✦&thinsp; BENGALURU &thinsp;—&thinsp; <span className="text-white/30">{String(active + 1).padStart(2, "0")}&thinsp;/&thinsp;{String(total).padStart(2, "0")}</span>
-            </span>
-          </div>
-        </>
-      )}
+      {!isContactVisible && null}
 
       <AnimatePresence>
         {isContactVisible && (
